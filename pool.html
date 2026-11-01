@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Black Coin — Launch the Pool</title>
+<style>
+body{background:#0a0a0a;color:#fff;font-family:-apple-system,system-ui,sans-serif;margin:0;padding:24px;text-align:center}
+img.logo{width:130px;height:130px;border-radius:50%;margin-top:6px;box-shadow:0 0 34px rgba(255,0,0,.35)}
+h1{font-size:28px;margin:12px 0 2px}.red{color:#e11}
+.sub{color:#aaa;margin:0 0 18px}
+.card{background:#161616;border:1px solid #2a2a2a;border-radius:16px;padding:18px;max-width:440px;margin:0 auto 16px;text-align:left;font-size:15px;line-height:1.55}
+.card b{color:#fff}
+button{display:block;width:100%;max-width:440px;margin:12px auto;padding:18px;font-size:19px;font-weight:700;border:0;border-radius:14px;cursor:pointer}
+#connect{background:#fff;color:#000}
+#approve{background:#444;color:#fff}
+#build{background:#c00;color:#fff}
+button:disabled{opacity:.35}
+button.done{background:#175c2b !important;color:#fff}
+#status{max-width:440px;margin:14px auto;color:#ddd;font-size:15px;line-height:1.55;word-break:break-word;text-align:left}
+a{color:#6cf}
+.small{color:#888;font-size:13px;max-width:440px;margin:8px auto;line-height:1.5}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;word-break:break-all}
+.big{font-size:21px}
+.check{color:#5fd35f}
+</style></head><body>
+<img class="logo" src="logo.jpg" alt="Black Coin logo">
+<h1>BLACK <span class="red">COIN</span></h1>
+<p class="sub">Launch the trading pool &bull; Aerodrome on Base</p>
+<div class="card">
+<b>What a pool is, in one breath:</b> a little two-sided shop window. One side holds BC, the other side holds ETH. That pair gives BC its first price &mdash; and lets <b>anybody buy or sell BC</b>, any time, without asking anyone.<br><br>
+<b>What goes in (your plan):</b><br>
+&bull; <b>500,000,000 BC</b> &mdash; half your supply (you keep the other 500M)<br>
+&bull; <b>0.00089 ETH</b> &mdash; about <b>$2.01</b><br>
+&bull; Starting price: <b>1 BC &asymp; $0.0000000040</b><br><br>
+You get <b>pool receipt tokens (LP)</b> back in your wallet &mdash; they prove the pool money is yours and let you pull it out later. You can add more to the pool any time; small pool = small trades only for now, and price can swing hard &mdash; that&rsquo;s normal at this size.<br><br>
+Coin: <span class="mono">0x0Ea794511a1864dFD4CFA85982a4C7fbAA6f1e88</span>
+</div>
+<button id="connect">1. Connect my wallet</button>
+<button id="approve" disabled>2. Allow the pool to use my BC</button>
+<button id="build" disabled>3. Build the pool &amp; add my $2 + 500M BC</button>
+<div id="status">Open this page inside <b>Coinbase Wallet&rsquo;s Browser</b> to start.</div>
+<p class="small">Venue: Aerodrome (Base&rsquo;s main exchange). Router and factory addresses were verified on-chain by Milli before this page was built. This page re-checks everything live, runs a practice simulation before sending real funds, and only says LIVE after reading the finished pool from the blockchain.</p>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+const BC = "0x0Ea794511a1864dFD4CFA85982a4C7fbAA6f1e88";
+const WETH = "0x4200000000000000000000000000000000000006";
+const ROUTER = "0xcF77a3Ba9A5CA399B7c97c74d54e5b1Beb874E43";
+const FACTORY = "0x420DD381b31aEf6683db6B902084cB0FFECe40Da";
+const KEN = "0xef8fb653a0ab5b7f01d0cd0dca07b2c1ee3196e3";
+const BC_IN = ethers.parseUnits("500000000", 18);
+const BC_MIN = ethers.parseUnits("490000000", 18);
+const ETH_IN = ethers.parseEther("0.00089");
+const ETH_MIN = ethers.parseEther("0.00087");
+const ERC20 = ["function approve(address spender, uint256 amount) returns (bool)", "function allowance(address owner, address spender) view returns (uint256)", "function balanceOf(address) view returns (uint256)"];
+const FACTORY_ABI = ["function getPool(address tokenA, address tokenB, bool stable) view returns (address)", "function createPool(address tokenA, address tokenB, bool stable) returns (address)"];
+const ROUTER_ABI = ["function addLiquidityETH(address token, bool stable, uint256 amountTokenDesired, uint256 amountTokenMin, uint256 amountETHMin, address to, uint256 deadline) payable returns (uint256 amountToken, uint256 amountETH, uint256 liquidity)"];
+let provider, signer;
+const $ = id => document.getElementById(id);
+const say = m => { $("status").innerHTML = m; };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function waitFor(label, fn, tries = 30) {
+  for (let i = 0; i < tries; i++) { const v = await fn(); if (v) return v; await sleep(3000); }
+  return null;
+}
+$("connect").onclick = async () => {
+  try {
+    if (!window.ethereum) { say("No wallet found. Open this link inside <b>Coinbase Wallet &rarr; Browser</b> (the globe icon), not in Safari/Chrome."); return; }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    let net = await provider.getNetwork();
+    if (net.chainId !== 8453n) {
+      say("Switching to Base&hellip;");
+      try { await window.ethereum.request({method:"wallet_switchEthereumChain", params:[{chainId:"0x2105"}]}); }
+      catch(e){ await window.ethereum.request({method:"wallet_addEthereumChain", params:[{chainId:"0x2105", chainName:"Base", nativeCurrency:{name:"Ether",symbol:"ETH",decimals:18}, rpcUrls:["https://mainnet.base.org"], blockExplorerUrls:["https://basescan.org"]}]}); }
+      provider = new ethers.BrowserProvider(window.ethereum);
+      net = await provider.getNetwork();
+      if (net.chainId !== 8453n) { say("Wallet is not on Base yet. Switch the network to Base in your wallet, then tap Connect again."); return; }
+    }
+    signer = await provider.getSigner();
+    const addr = (await signer.getAddress()).toLowerCase();
+    if (addr !== KEN) { say("Connected wallet is <b>" + addr + "</b>.<br>That is NOT your wallet (0xef8f&hellip;196e3). Switch accounts in Coinbase Wallet and tap Connect again."); return; }
+    const bc = new ethers.Contract(BC, ERC20, provider);
+    const factory = new ethers.Contract(FACTORY, FACTORY_ABI, provider);
+    const pool = await factory.getPool(BC, WETH, false);
+    if (pool !== ethers.ZeroAddress) {
+      const lp = new ethers.Contract(pool, ERC20, provider);
+      const myLp = await lp.balanceOf(KEN);
+      const bcInPool = await bc.balanceOf(pool);
+      if (myLp > 0n && bcInPool > 0n) {
+        say("<span class='big'>&#127881; <b>THE POOL IS ALREADY LIVE!</b></span><br><br>Pool: <span class='mono'>" + pool + "</span><br>BC in pool: <b>" + ethers.formatUnits(bcInPool, 18) + " BC</b><br>Your pool receipt (LP): <b>" + ethers.formatUnits(myLp, 18) + "</b><br><br><a href='https://dexscreener.com/base/" + pool + "' target='_blank'>See it on DexScreener</a> &bull; <a href='https://basescan.org/token/" + BC + "' target='_blank'>Coin on BaseScan</a><br><br>Nothing left to do &mdash; send Milli a screenshot!");
+        $("connect").disabled = true; return;
+      }
+    }
+    const bcBal = await bc.balanceOf(KEN);
+    const ethBal = await provider.getBalance(KEN);
+    const allow = await bc.allowance(KEN, ROUTER);
+    say("&#9989; Connected: <b>" + addr + "</b><br>Your BC: <b>" + ethers.formatUnits(bcBal, 18) + "</b><br>Your ETH: <b>" + ethers.formatEther(ethBal) + "</b>");
+    $("connect").disabled = true;
+    if (allow >= BC_IN) { $("approve").textContent = "2. BC allowance \u2713 done"; $("approve").classList.add("done"); $("build").disabled = false; say($("status").innerHTML + "<br>Allowance already set &mdash; go straight to <b>step 3</b>."); }
+    else { $("approve").disabled = false; say($("status").innerHTML + "<br>Now tap <b>step 2</b> and confirm &mdash; it just gives the exchange permission to take exactly the 500M BC for the pool. It moves nothing yet."); }
+  } catch(e){ say("Connect error: " + (e.shortMessage || e.message || e)); }
+};
+$("approve").onclick = async () => {
+  try {
+    $("approve").disabled = true;
+    say("Setting the allowance&hellip; confirm in your wallet.");
+    const bc = new ethers.Contract(BC, ERC20, signer);
+    await bc.approve(ROUTER, BC_IN);
+    say("Confirm received. Waiting for the blockchain to record the allowance&hellip;");
+    const bcRead = new ethers.Contract(BC, ERC20, provider);
+    const ok = await waitFor("allowance", async () => (await bcRead.allowance(KEN, ROUTER)) >= BC_IN);
+    if (!ok) { say("The allowance has not shown up on-chain yet. Wait a minute, then reopen this page and tap Connect &mdash; it picks up where you left off. If it still does not show, screenshot this for Milli."); $("approve").disabled = false; return; }
+    $("approve").textContent = "2. BC allowance \u2713 done"; $("approve").classList.add("done");
+    $("build").disabled = false;
+    say("<span class='check'>&#9989;</span> Allowance recorded on-chain. Now tap <b>step 3</b> &mdash; the big one. It creates the pool (if needed) and adds your $2 + 500M BC.");
+  } catch(e){ $("approve").disabled = false; say("Approve error: " + (e.shortMessage || e.message || e) + "<br>If the wallet never confirmed, nothing was spent. Screenshot this for Milli."); }
+};
+$("build").onclick = async () => {
+  try {
+    $("build").disabled = true;
+    const factory = new ethers.Contract(FACTORY, FACTORY_ABI, provider);
+    const factoryWrite = new ethers.Contract(FACTORY, FACTORY_ABI, signer);
+    let pool = await factory.getPool(BC, WETH, false);
+    if (pool === ethers.ZeroAddress) {
+      say("Creating the empty pool first&hellip; confirm in your wallet.");
+      await factoryWrite.createPool(BC, WETH, false);
+      pool = await waitFor("pool", async () => { const p = await factory.getPool(BC, WETH, false); return p !== ethers.ZeroAddress ? p : null; }, 40);
+      if (!pool) { say("The pool has not appeared on-chain yet. Wait a minute, reopen this page, tap Connect, then step 3 again &mdash; it will skip anything already done. Screenshot for Milli if it repeats."); $("build").disabled = false; return; }
+    }
+    say("Pool found: <span class='mono'>" + pool + "</span><br>Running a practice simulation of the deposit first&hellip;");
+    const router = new ethers.Contract(ROUTER, ROUTER_ABI, signer);
+    const deadline = Math.floor(Date.now() / 1000) + 1200;
+    const callData = router.interface.encodeFunctionData("addLiquidityETH", [BC, false, BC_IN, BC_MIN, ETH_MIN, KEN, deadline]);
+    try {
+      await provider.call({from: KEN, to: ROUTER, data: callData, value: ETH_IN});
+    } catch (simErr) {
+      say("&#9888;&#65039; The practice simulation failed, so I did NOT send your money. Reason the blockchain gave: " + (simErr.shortMessage || simErr.message || simErr) + "<br><br>Screenshot this whole message for Milli &mdash; she will fix the page. Your BC and ETH have not moved.");
+      $("build").disabled = false; return;
+    }
+    say("Simulation passed &#9989;. Sending the real deposit&hellip; confirm in your wallet (this is the one that moves $2 of ETH + 500M BC into the pool).");
+    const tx = await router.addLiquidityETH(BC, false, BC_IN, BC_MIN, ETH_MIN, KEN, deadline, {value: ETH_IN});
+    say("Deposit sent (tx " + (tx.hash || "") + "). Watching the blockchain for the finished pool&hellip;");
+    const bc = new ethers.Contract(BC, ERC20, provider);
+    const weth = new ethers.Contract(WETH, ERC20, provider);
+    const lp = new ethers.Contract(pool, ERC20, provider);
+    const proof = await waitFor("proof", async () => {
+      const b = await bc.balanceOf(pool); const w = await weth.balanceOf(pool); const mine = await lp.balanceOf(KEN);
+      return (b >= BC_MIN && w > 0n && mine > 0n) ? {b, w, mine} : null;
+    }, 40);
+    if (!proof) { say("The finished pool has not been proven on-chain yet. Wait a minute and reopen this page, then tap Connect &mdash; if the pool is live it will show you the proof panel. Screenshot this for Milli if it repeats. Tx: " + (tx.hash || "unknown")); $("build").disabled = false; return; }
+    $("build").textContent = "3. Pool built \u2713"; $("build").classList.add("done");
+    say("<span class='big'>&#127881; <b>BLACK COIN IS TRADABLE &mdash; POOL LIVE, PROVEN ON-CHAIN!</b></span><br><br>" +
+      "Pool: <span class='mono'>" + pool + "</span><br>" +
+      "<span class='check'>&bull;</span> BC in pool: <b>" + ethers.formatUnits(proof.b, 18) + " BC</b><br>" +
+      "<span class='check'>&bull;</span> ETH in pool: <b>" + ethers.formatEther(proof.w) + " ETH</b><br>" +
+      "<span class='check'>&bull;</span> Your pool receipt (LP): <b>" + ethers.formatUnits(proof.mine, 18) + "</b> &mdash; keep it, it is your claim on the pool<br><br>" +
+      "<a href='https://dexscreener.com/base/" + pool + "' target='_blank'>Your coin&rsquo;s chart on DexScreener</a><br>" +
+      "<a href='https://www.geckoterminal.com/base/pools/" + pool + "' target='_blank'>GeckoTerminal pool page</a><br>" +
+      "<a href='https://basescan.org/address/" + pool + "' target='_blank'>Pool on BaseScan</a><br><br>" +
+      "Send Milli a screenshot &mdash; launch complete!");
+  } catch(e){ $("build").disabled = false; say("Build error: " + (e.shortMessage || e.message || e) + "<br>Screenshot this for Milli before tapping anything else."); }
+};
+</script></body></html>
