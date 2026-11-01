@@ -21,9 +21,40 @@ a{color:#6cf}
 .mono{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;word-break:break-all}
 .big{font-size:21px}
 .check{color:#5fd35f}
+
+.stage{position:relative;height:238px;display:flex;align-items:center;justify-content:center;perspective:1000px;margin-top:2px}
+.halo{position:absolute;width:210px;height:210px;border-radius:50%;background:radial-gradient(circle,rgba(255,20,20,.5) 0%,rgba(255,20,20,.14) 45%,transparent 70%);animation:haloPulse 3.2s ease-in-out infinite}
+@keyframes haloPulse{0%,100%{transform:scale(1);opacity:.75}50%{transform:scale(1.16);opacity:1}}
+.bob{animation:bobFloat 5s ease-in-out infinite alternate}
+@keyframes bobFloat{from{transform:translateY(-5px)}to{transform:translateY(7px)}}
+.coin3d{position:relative;width:186px;height:186px;transform-style:preserve-3d;animation:coinSpin 7s linear infinite}
+@keyframes coinSpin{from{transform:rotateY(0deg)}to{transform:rotateY(360deg)}}
+.face{position:absolute;inset:0;border-radius:50%;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.face img{width:100%;height:100%;display:block}
+.face.back{transform:rotateY(180deg)}
+.face::after{content:"";position:absolute;top:-20%;left:-70%;width:45%;height:140%;background:linear-gradient(105deg,transparent,rgba(255,255,255,.5),transparent);transform:rotate(10deg);animation:shineSweep 3.4s ease-in-out infinite}
+@keyframes shineSweep{0%,55%{left:-70%}90%,100%{left:130%}}
+.spark{position:absolute;bottom:16px;width:5px;height:5px;border-radius:50%;background:#ff3535;opacity:0;animation:sparkRise 3.6s linear infinite}
+@keyframes sparkRise{0%{transform:translateY(0) scale(1);opacity:0}12%{opacity:.95}100%{transform:translateY(-205px) scale(.3);opacity:0}}
+h1.shimmer{background:linear-gradient(100deg,#fff 20%,#ff2a2a 40%,#fff 55%,#ffb3b3 70%,#fff 90%);background-size:220% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shimmerMove 5s linear infinite}
+@keyframes shimmerMove{from{background-position:0% 0}to{background-position:220% 0}}
+@media (prefers-reduced-motion: reduce){.coin3d,.halo,.bob,.spark,.face::after,h1.shimmer{animation:none}}
 </style></head><body>
-<img class="logo" src="logo.jpg" alt="Black Coin logo">
-<h1>BLACK <span class="red">COIN</span></h1>
+<div class="stage">
+  <div class="halo"></div>
+  <div class="bob">
+    <div class="coin3d">
+      <div class="face front"><img src="logo.png" alt="Black Coin"></div>
+      <div class="face back"><img src="logo.png" alt=""></div>
+    </div>
+  </div>
+  <span class="spark" style="left:44%;animation-delay:0s"></span>
+  <span class="spark" style="left:52%;animation-delay:1.1s"></span>
+  <span class="spark" style="left:48%;animation-delay:2s"></span>
+  <span class="spark" style="left:57%;animation-delay:2.7s"></span>
+  <span class="spark" style="left:40%;animation-delay:3.2s"></span>
+</div>
+<h1 class="shimmer">BLACK COIN</h1>
 <p class="sub">Launch the trading pool &bull; Aerodrome on Base</p>
 <div class="card">
 <b>What a pool is, in one breath:</b> a little two-sided shop window. One side holds BC, the other side holds ETH. That pair gives BC its first price &mdash; and lets <b>anybody buy or sell BC</b>, any time, without asking anyone.<br><br>
