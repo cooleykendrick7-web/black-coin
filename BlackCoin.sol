@@ -7,19 +7,24 @@ pragma solidity ^0.8.20;
  * - Name:        Black Coin
  * - Symbol:      BC
  * - Decimals:    18
- * - Total supply: 1,000,000,000 BC — fixed forever, all minted once to the deployer
+ * - Total supply: 1,000,000,000 BC — fixed forever, all minted once to SUPPLY_RECIPIENT
  * - No mint:     nobody can ever create more
  * - No tax:      no buy/sell/transfer fees in the contract
  * - No admin:    no owner, no blacklist, no pause, no upgrade — nothing to control later
  *
- * Deploy this ONE file in Remix with the deployer's wallet on Base.
- * The deployer receives the full 1B supply and then adds liquidity.
+ * The full supply is minted to SUPPLY_RECIPIENT (Ken's wallet) no matter which
+ * account or factory contract performs the deployment. This matters: Ken's
+ * Coinbase Smart Wallet deploys through the public CREATE2 factory contract,
+ * so msg.sender in this constructor is the factory — never rely on it here.
  */
 contract BlackCoin {
     string public constant name = "Black Coin";
     string public constant symbol = "BC";
     uint8 public constant decimals = 18;
     uint256 public immutable totalSupply;
+
+    /// @notice Ken's wallet — receives the entire 1B supply at deployment.
+    address public constant SUPPLY_RECIPIENT = 0xEf8fB653A0aB5b7f01D0CD0DcA07b2C1EE3196E3;
 
     mapping(address => uint256) public balanceOf;
     mapping(address => mapping(address => uint256)) public allowance;
@@ -29,8 +34,8 @@ contract BlackCoin {
 
     constructor() {
         totalSupply = 1_000_000_000 * (10 ** uint256(decimals)); // 1 billion BC
-        balanceOf[msg.sender] = totalSupply;
-        emit Transfer(address(0), msg.sender, totalSupply);
+        balanceOf[SUPPLY_RECIPIENT] = totalSupply;
+        emit Transfer(address(0), SUPPLY_RECIPIENT, totalSupply);
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
