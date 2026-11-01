@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Black Coin — Deploy</title>
+<style>
+body{background:#0a0a0a;color:#fff;font-family:-apple-system,system-ui,sans-serif;margin:0;padding:24px;text-align:center}
+img{width:150px;height:150px;border-radius:50%;margin-top:10px}
+h1{font-size:28px;margin:14px 0 2px}.red{color:#e11}
+.sub{color:#aaa;margin:0 0 20px}
+.card{background:#161616;border:1px solid #2a2a2a;border-radius:16px;padding:18px;max-width:420px;margin:0 auto 16px;text-align:left;font-size:15px;line-height:1.55}
+button{display:block;width:100%;max-width:420px;margin:12px auto;padding:18px;font-size:19px;font-weight:700;border:0;border-radius:14px;cursor:pointer}
+#connect{background:#fff;color:#000}
+#deploy{background:#c00;color:#fff}
+button:disabled{opacity:.35}
+#status{max-width:420px;margin:14px auto;color:#ddd;font-size:15px;line-height:1.5;word-break:break-word}
+a{color:#6cf}
+.small{color:#888;font-size:13px;max-width:420px;margin:8px auto;line-height:1.5}
+</style></head><body>
+<h1>BLACK <span class="red">COIN</span></h1>
+<p class="sub">BC &bull; Base chain &bull; 1,000,000,000 fixed supply</p>
+<div class="card">
+<b>What this page does — one thing only:</b><br>
+Deploys the Black Coin contract from <b>your</b> wallet. All 1 billion BC go to your wallet.
+No more can ever be made. No taxes. No admin keys.<br><br>
+Deploy gas on Base is pennies. Nothing else is charged, nothing else is approved.
+</div>
+<button id="connect">1. Connect my wallet</button>
+<button id="deploy" disabled>2. Deploy Black Coin</button>
+<div id="status">Open this page inside <b>Coinbase Wallet&rsquo;s Browser</b> to start.</div>
+<p class="small">Contract source: BlackCoin.sol (Solidity 0.8.26, compiled &amp; verified clean by Milli). Network: Base (8453). If the wallet asks to switch networks, allow Base.</p>
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+const ABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}];
+const BYTECODE = "0x60a060405234801561000f575f80fd5b5061001c6012600a610172565b61002a90633b9aca00610184565b6080819052335f8181526020818152604080832085905551938452919290917fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef910160405180910390a361019b565b634e487b7160e01b5f52601160045260245ffd5b6001815b60018411156100c8578085048111156100ac576100ac610079565b60018416156100ba57908102905b60019390931c928002610091565b935093915050565b5f826100de5750600161016c565b816100ea57505f61016c565b8160018114610100576002811461010a57610126565b600191505061016c565b60ff84111561011b5761011b610079565b50506001821b61016c565b5060208310610133831016604e8410600b8410161715610149575081810a61016c565b6101555f19848461008d565b805f190482111561016857610168610079565b0290505b92915050565b5f61017d83836100d0565b9392505050565b808202811582820484141761016c5761016c610079565b60805161058f6101b25f395f60fb015261058f5ff3fe608060405234801561000f575f80fd5b5060043610610090575f3560e01c8063313ce56711610063578063313ce5671461013e57806370a082311461015857806395d89b4114610177578063a9059cbb14610198578063dd62ed3e146101ab575f80fd5b806306fdde0314610094578063095ea7b3146100d357806318160ddd146100f657806323b872dd1461012b575b5f80fd5b6100bd6040518060400160405280600a815260200169213630b1b59021b7b4b760b11b81525081565b6040516100ca9190610437565b60405180910390f35b6100e66100e1366004610487565b6101d5565b60405190151581526020016100ca565b61011d7f000000000000000000000000000000000000000000000000000000000000000081565b6040519081526020016100ca565b6100e66101393660046104af565b610241565b610146601281565b60405160ff90911681526020016100ca565b61011d6101663660046104e9565b5f6020819052908152604090205481565b6100bd60405180604001604052806002815260200161424360f01b81525081565b6100e66101a6366004610487565b6102fe565b61011d6101b9366004610509565b600160209081525f928352604080842090915290825290205481565b335f8181526001602090815260408083206001600160a01b038716808552925280832085905551919290917f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b9259061022f9086815260200190565b60405180910390a35060015b92915050565b6001600160a01b0383165f908152600160209081526040808320338452909152812054828110156102b25760405162461bcd60e51b81526020600482015260166024820152751090ce88185b1b1bddd85b98d948195e18d95959195960521b60448201526064015b60405180910390fd5b5f1981146102e8576102c4838261053a565b6001600160a01b0386165f9081526001602090815260408083203384529091529020555b6102f3858585610313565b506001949350505050565b5f61030a338484610313565b50600192915050565b6001600160a01b0382166103695760405162461bcd60e51b815260206004820152601c60248201527f42433a207472616e7366657220746f207a65726f20616464726573730000000060448201526064016102a9565b6001600160a01b0383165f908152602081905260409020548111156103d05760405162461bcd60e51b815260206004820152601860248201527f42433a20696e73756666696369656e742062616c616e6365000000000000000060448201526064016102a9565b6001600160a01b038381165f818152602081815260408083208054879003905593861680835291849020805486019055925184815290927fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef910160405180910390a3505050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b0381168114610482575f80fd5b919050565b5f8060408385031215610498575f80fd5b6104a18361046c565b946020939093013593505050565b5f805f606084860312156104c1575f80fd5b6104ca8461046c565b92506104d86020850161046c565b929592945050506040919091013590565b5f602082840312156104f9575f80fd5b6105028261046c565b9392505050565b5f806040838503121561051a575f80fd5b6105238361046c565b91506105316020840161046c565b90509250929050565b8181038181111561023b57634e487b7160e01b5f52601160045260245ffdfea26469706673582212207f55af876c5adeda728e0a991698d2b76c6ff7beaf0ee30f8823175b1886335864736f6c634300081a0033";
+const EXPECTED = "0xef8fb653a0ab5b7f01d0cd0dca07b2c1ee3196e3";
+let provider, signer;
+const $ = id => document.getElementById(id);
+const say = m => { $("status").innerHTML = m; };
+$("connect").onclick = async () => {
+  try {
+    if (!window.ethereum) { say("No wallet found. Open this link inside <b>Coinbase Wallet &rarr; Browser</b> (the globe icon), not in Safari/Chrome."); return; }
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    let net = await provider.getNetwork();
+    if (net.chainId !== 8453n) {
+      say("Switching to Base&hellip;");
+      try { await window.ethereum.request({method:"wallet_switchEthereumChain", params:[{chainId:"0x2105"}]}); }
+      catch(e){ await window.ethereum.request({method:"wallet_addEthereumChain", params:[{chainId:"0x2105", chainName:"Base", nativeCurrency:{name:"Ether",symbol:"ETH",decimals:18}, rpcUrls:["https://mainnet.base.org"], blockExplorerUrls:["https://basescan.org"]}]}); }
+      provider = new ethers.BrowserProvider(window.ethereum);
+      net = await provider.getNetwork();
+      if (net.chainId !== 8453n) { say("Wallet is not on Base yet. Switch the network to Base in your wallet, then tap Connect again."); return; }
+    }
+    signer = await provider.getSigner();
+    const addr = (await signer.getAddress()).toLowerCase();
+    const bal = await provider.getBalance(addr);
+    if (addr !== EXPECTED) { say("Connected wallet is <b>" + addr + "</b>.<br>That is NOT the wallet holding your $4.72 (0xef8f&hellip;196e3). Switch accounts in Coinbase Wallet and tap Connect again. Do not deploy from the wrong wallet."); return; }
+    say("&#9989; Connected: <b>" + addr + "</b><br>Balance on Base: <b>" + ethers.formatEther(bal) + " ETH</b><br>Now tap <b>Deploy Black Coin</b> and confirm in your wallet.");
+    $("deploy").disabled = false; $("connect").disabled = true;
+  } catch(e){ say("Connect error: " + (e.shortMessage || e.message || e)); }
+};
+$("deploy").onclick = async () => {
+  try {
+    $("deploy").disabled = true;
+    say("Creating Black Coin&hellip; confirm the transaction in your wallet.");
+    const factory = new ethers.ContractFactory(ABI, BYTECODE, signer);
+    const contract = await factory.deploy();
+    say("Sent! Waiting for Base to confirm&hellip;<br>Tx: " + contract.deploymentTransaction().hash);
+    await contract.waitForDeployment();
+    const addr = await contract.getAddress();
+    say("&#127881; <b>BLACK COIN IS LIVE!</b><br><br>Contract address:<br><b>" + addr + "</b><br><br><a href='https://basescan.org/token/" + addr + "' target='_blank'>View it on BaseScan</a><br><br>Send Milli that contract address (or a screenshot). Next step: the tiny pool.");
+  } catch(e){ $("deploy").disabled = false; say("Deploy error: " + (e.shortMessage || e.message || e) + "<br>Nothing was lost if the transaction did not confirm. Screenshot this for Milli."); }
+};
+</script></body></html>
